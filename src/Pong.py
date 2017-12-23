@@ -67,12 +67,12 @@ ball = Element(np.array([x_center, y_center]), np.array([random.choice((1, -1)),
 player1 = Element(np.array([20.0, y_center]), np.array([0,0]), 15, color=GREEN)
 player2 = Element(np.array([width - 20.0, y_center]), np.array([0,0]), 15)
 
-game = (ball, player1, player2)
+_elements = (ball, player1, player2)
 
 player1.score = 0
 player2.score = 0
 
-reward = 0
+_reward = 0
 
 StateReward = namedtuple("StateReward", ['state', 'reward'])
 def step(action): # action is a velocity vector
@@ -82,24 +82,24 @@ def step(action): # action is a velocity vector
 
     collisions()
 
-    for i in game:
+    for i in _elements:
         i.update()
 
-    ret = StateReward(flat(), reward)
+    ret = StateReward(flat(), _reward)
 
-    if reward == 0:
+    if _reward == 0:
         return ret # state reward tuple
 
     reset()
     return ret
 
 def reset():
-    global reward
-    if reward > 0:
+    global _reward
+    if _reward > 0:
         player1.score += 1
     else:
         player2.score += 1
-    reward = 0
+    _reward = 0
     ball.pos = np.array([x_center, y_center])
     ball.vel = np.array([random.choice((1, -1)),random.choice((.7, -.7))])
 
@@ -110,7 +110,7 @@ def collisions():
     _boundaries()
 
 def _boundaries():
-    for i in game:
+    for i in _elements:
         for j in (0,1):
             if i.pos[j] + i.radius >= window_vector[j] and i.vel[j] > 0 or i.pos[j] - i.radius <= 0 and i.vel[j] < 0:
                 i.vel[j] *= -1
@@ -120,12 +120,12 @@ def _boundaries():
         player2.vel[0] = 0
 
 def _check_goal():
-    global reward
+    global _reward
     if ball.pos[0] - ball.radius <= 0:
         print("score!")
-        reward = -1
+        _reward = -1
     elif ball.pos[0] + ball.radius >= width:
-        reward = 1
+        _reward = 1
 
 def _physics():
     def colliding(thing1, thing2):
@@ -140,10 +140,10 @@ def _physics():
         a.vel = a.vel - 2*b.mass/(a.mass + b.mass)*np.dot(a.vel - b.vel, a.pos - b.pos)/(magnitude(a.pos - b.pos)**2) * (a.pos - b.pos)
         b.vel = b.vel - 2*a.mass/(a.mass + b.mass)*np.dot(b.vel - a.vel, b.pos - a.pos)/(magnitude(b.pos - a.pos)**2) * (b.pos - a.pos)
 
-    for i in range(len(game)):
-        for j in range(i+1, len(game)):
-            if colliding(game[i], game[j]):
-                resolve(game[i], game[j])
+    for i in range(len(_elements)):
+        for j in range(i+1, len(_elements)):
+            if colliding(_elements[i], _elements[j]):
+                resolve(_elements[i], _elements[j])
 
 
 def expert_action(element):
@@ -162,7 +162,7 @@ def regulate_speed(action):
 
 def flat(): # represents the entire statespace as a 1D array for learning purposes
     ret = np.array([])
-    for i in game:
+    for i in _elements:
         ret = np.concatenate([ret, i.flat()])
     return ret
 
@@ -172,17 +172,13 @@ def magnitude(array):
         sum += i*i
     return math.sqrt(sum)
 
-#def dot(array1, array2):
-#    print(np.transpose(array2))
-#    return array1 * np.transpose(array2)
-
 def draw():
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
     canvas.fill(BLACK)
-    for i in game:
+    for i in _elements:
         i.draw(canvas)
     score1 = font.render(str(player1.score), False, RED)
     canvas.blit(score1, (20, 20))
