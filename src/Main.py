@@ -6,6 +6,6 @@ print("Hello TensorFlow")
 
 
 while True:
-    state, reward = Pong.step(np.array([1, 1]))
+    state, reward = Pong.step(Pong.ball.pos - Pong.player1.pos)
     Pong.draw()
 
