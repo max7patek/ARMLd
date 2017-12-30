@@ -32,6 +32,11 @@ RED = (255,0,0)
 GREEN = (0,255,0)
 BLACK = (0,0,0)
 
+r2o2 = math.sqrt(2)/2
+DIRECTIONS = namedtuple('Directions', ['ZERO', 'NORTH', 'NORTHEAST', 'EAST', 'SOUTHEAST', 'SOUTH', 'SOUTHWEST', 'WEST', 'NORTHWEST'])\
+    (np.array([0,0]), np.array([0,1]), np.array([r2o2,r2o2]), np.array([1,0]), np.array([r2o2,-r2o2]), np.array([0,-1]),\
+     np.array([-r2o2,-r2o2]), np.array([-1,0]), np.array([-r2o2,r2o2]))
+
 width = 400.0
 x_center = width/2
 height = 400.0
@@ -39,6 +44,7 @@ y_center = height/2
 window_vector = np.array([width, height])
 
 speed = 2.0 # TODO: tweak
+score_limit = 20
 
 canvas = pygame.display.set_mode((round(width), round(height)), 0, 32)
 font = pygame.font.SysFont('Comic Sans MS', 30)
@@ -63,37 +69,55 @@ class Element:
         pygame.draw.circle(canvas, self.color, _round(self.pos), self.radius)
 
 
-ball = Element(np.array([x_center, y_center]), np.array([random.choice((1, -1)),random.choice((.7, -.7))]), 5, mass=.5, ball=True)
-player1 = Element(np.array([20.0, y_center]), np.array([0,0]), 15, color=GREEN)
-player2 = Element(np.array([width - 20.0, y_center]), np.array([0,0]), 15)
+global ball, player1, player2, _elements, _reward
+def init():
+    global ball, player1, player2, _elements, _reward
+    ball = Element(np.array([x_center, y_center]), np.array([random.choice((1, -1)),random.choice((.7, -.7))]), 5, mass=.5, ball=True)
+    player1 = Element(np.array([20.0, y_center]), np.array([0,0]), 15, color=GREEN)
+    player2 = Element(np.array([width - 20.0, y_center]), np.array([0,0]), 15)
 
-_elements = (ball, player1, player2)
+    _elements = (ball, player1, player2)
 
-player1.score = 0
-player2.score = 0
+    player1.score = 0
+    player2.score = 0
 
-_reward = 0
+    _reward = 0
 
-StateReward = namedtuple("StateReward", ['state', 'reward'])
+init()
+
+StateRewardDone = namedtuple("StateReward", ['state', 'reward', 'done'])
+
 def step(action): # action is a velocity vector
-
     player1.vel = regulate_speed(action)
     player2.vel = regulate_speed(expert_action(player2))
+    return _step_execute()
 
+def simple_step(action): #action is the index of a direction unit vector in DIRECTIONS
+    player1.vel = speed * DIRECTIONS[action]
+    player2.vel = regulate_speed(expert_action(player2))
+    return _step_execute()
+
+def _step_execute():
     collisions()
 
     for i in _elements:
         i.update()
 
-    ret = StateReward(flat(), _reward)
+    ret = StateRewardDone(flat(), _reward, False)
 
     if _reward == 0:
-        return ret # state reward tuple
+        return ret  # state reward tuple
 
-    reset()
+    upon_score()
+    if player1.score == score_limit or player2.score == score_limit:
+        ret.done = True
     return ret
 
 def reset():
+    init()
+    return flat()
+
+def upon_score():
     global _reward
     if _reward > 0:
         player1.score += 1
