@@ -27,6 +27,10 @@ pygame.init()
 fps = pygame.time.Clock()
 
 
+WARP_SPEED = 8
+COLLISION_LOOKAHEAD = 3
+
+
 WHITE = (255,255,255)
 RED = (255,0,0)
 GREEN = (0,255,0)
@@ -44,7 +48,7 @@ y_center = height/2
 window_vector = np.array([width, height])
 
 speed = 2.0 # TODO: tweak
-score_limit = 20
+score_limit = 100000
 
 canvas = pygame.display.set_mode((round(width), round(height)), 0, 32)
 font = pygame.font.SysFont('Comic Sans MS', 30)
@@ -60,7 +64,7 @@ class Element:
         self.color = color
 
     def update(self):
-        self.pos += self.vel
+        self.pos += self.vel*WARP_SPEED
 
     def flat(self):
         return np.concatenate([self.pos, self.vel])
@@ -146,7 +150,7 @@ def _boundaries():
 def _check_goal():
     global _reward
     if ball.pos[0] - ball.radius <= 0:
-        print("score!")
+        #print("score!")
         _reward = -1
     elif ball.pos[0] + ball.radius >= width:
         _reward = 1
@@ -159,7 +163,7 @@ def _physics():
         radii = thing1.radius + thing2.radius
         vel1 = np.dot(thing1.vel, vector)
         vel2 = -1*np.dot(thing2.vel, vector)
-        return mag < radii and vel1 + vel2 > 0
+        return mag < radii + COLLISION_LOOKAHEAD and vel1 + vel2 > 0
     def resolve(a, b):
         a.vel = a.vel - 2*b.mass/(a.mass + b.mass)*np.dot(a.vel - b.vel, a.pos - b.pos)/(magnitude(a.pos - b.pos)**2) * (a.pos - b.pos)
         b.vel = b.vel - 2*a.mass/(a.mass + b.mass)*np.dot(b.vel - a.vel, b.pos - a.pos)/(magnitude(b.pos - a.pos)**2) * (b.pos - a.pos)
