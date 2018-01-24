@@ -23,6 +23,8 @@ from pygame.locals import *
 import sys
 from collections import namedtuple
 
+from gym.spaces import Box
+
 pygame.init()
 fps = pygame.time.Clock()
 
@@ -48,7 +50,13 @@ y_center = height/2
 window_vector = np.array([width, height])
 
 speed = 2.0 # TODO: tweak
-score_limit = 100000
+ball_speed = 10.0
+score_limit = 5
+
+# Ball, Player1, Player2
+observation_space = Box(np.array([0, 0, -ball_speed, -ball_speed, 0, 0, -speed, -speed, 0,0, -speed,-speed]),
+                        np.array([width, width, ball_speed, ball_speed, width, width, speed, speed, width,width, speed,speed]))
+action_space = Box(np.array([-speed, -speed]), np.array([speed, speed]))
 
 canvas = pygame.display.set_mode((round(width), round(height)), 0, 32)
 font = pygame.font.SysFont('Comic Sans MS', 30)
@@ -92,44 +100,44 @@ init()
 StateRewardDone = namedtuple("StateReward", ['state', 'reward', 'done'])
 
 def step(action): # action is a velocity vector
-    player1.vel = regulate_speed(action)
-    player2.vel = regulate_speed(expert_action(player2))
+    player1.vel = regulate_speed(action, speed)
+    player2.vel = regulate_speed(expert_action(player2), speed)
     return _step_execute()
 
 def simple_step(action): #action is the index of a direction unit vector in DIRECTIONS
     player1.vel = speed * DIRECTIONS[action]
-    player2.vel = regulate_speed(expert_action(player2))
+    player2.vel = regulate_speed(expert_action(player2, speed))
     return _step_execute()
 
 def _step_execute():
     collisions()
+    regulate_speed(ball.vel, ball_speed)
 
     for i in _elements:
         i.update()
 
-    ret = StateRewardDone(flat(), _reward, False)
+    r = _reward
+    s = flat()
+    if r != 0:
+        upon_score() # resets _reward
 
-    if _reward == 0:
-        return ret  # state reward tuple
+    return StateRewardDone(s, r, player1.score == score_limit or player2.score == score_limit)
 
-    upon_score()
-    if player1.score == score_limit or player2.score == score_limit:
-        ret.done = True
-    return ret
 
 def reset():
     init()
     return flat()
 
-def upon_score():
+def upon_score(): # resets _reward
     global _reward
     if _reward > 0:
         player1.score += 1
-    else:
+    elif _reward < 0:
         player2.score += 1
     _reward = 0
     ball.pos = np.array([x_center, y_center])
     ball.vel = np.array([random.choice((1, -1)),random.choice((.7, -.7))])
+    return
 
 
 def collisions():
@@ -182,9 +190,9 @@ def expert_action(element):
         vector = ball.pos - element.pos
     return vector
 
-def regulate_speed(action):
-    if magnitude(action) > speed:
-        action = speed * action / magnitude(action)
+def regulate_speed(action, max):
+    if magnitude(action) > max:
+        action = max * action / magnitude(action)
     return action
 
 
