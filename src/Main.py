@@ -35,7 +35,7 @@ updateModel = trainer.minimize(loss)
 #init = tf.initialize_all_variables()
 
 # Set learning parameters
-y = .99
+y = 1 # initially .99
 e = 0.1
 num_episodes = 20000
 #create lists to contain total rewards and steps per episode
@@ -44,39 +44,46 @@ rList = []
 
 episode_count = 0
 
+#with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+#    print(sess.run(Qout, feed_dict={inputs1: [list(range(statespace_size))]}))
+
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     for i in range(num_episodes):
         #Reset environment and get first new observation
         s = Pong.reset()
         rAll = 0
-        d = False
+        done = False
         j = 0
         print(i)
         #The Q-Network
-        while j < 200:
+        while not done:
             j+=1
             #Choose an action by greedily (with e chance of random action) from the Q-network
-            #a,allQ = sess.run([predict,Qout],feed_dict={inputs1:np.identity(statespace_size)[s]})
             a, allQ = sess.run([predict, Qout], feed_dict={inputs1: s.reshape([1,statespace_size])})
-            #print(a)
+            print("all Q", allQ)
+            print("best action", a)
             if np.random.rand(1) < e:
                 a[0] = random.choice(range(len(Pong.DIRECTIONS)))
             #Get new state and reward from environment
-            s1,r,d = Pong.simple_step(a[0])
-            if i > num_episodes - 200:
-                Pong.draw()
+            s1,r,done = Pong.simple_step(a[0])
+            #print(r)
+            #if i > num_episodes - 200:
+            Pong.draw()
             #Obtain the Q' values by feeding the new state through our network
-            Q1 = sess.run(Qout,feed_dict={inputs1:s.reshape([1,statespace_size])})
+            Q1 = sess.run(Qout,feed_dict={inputs1:s1.reshape([1,statespace_size])})
             #Obtain maxQ' and set our target value for chosen action.
             maxQ1 = np.max(Q1)
+            print("Q1 = ", Q1)
             targetQ = allQ
             targetQ[0,a[0]] = r + y*maxQ1
+            print("targetQ = ",targetQ)
             #Train our network using target and predicted Q values
             _,W1 = sess.run([updateModel,W],feed_dict={inputs1: s.reshape([1,statespace_size]),nextQ:targetQ})
             rAll += r
             s = s1
-            if d == True:
+            print("\n")
+            if done:
                 #Reduce chance of random action as we train the model.
                 e = 1./((i/50) + 10)
                 break
