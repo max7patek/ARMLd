@@ -7,7 +7,6 @@ and developed with tflearn + Tensorflow
 Author: Patrick Emami
 """
 # Adapted by the Cool Team
-# Currently not working my computer.
 #   -Max
 
 import tensorflow as tf
@@ -285,7 +284,7 @@ def train(sess, env, args, actor, critic, actor_noise):
             # a = actor.predict(np.reshape(s, (1, 3))) + (1. / (1. + i))
             a = actor.predict(np.reshape(s, (1, actor.s_dim))) + actor_noise()
 
-            s2, r, terminal, info = env.step(a[0])
+            s2, r, terminal = env.step(a[0])
 
             replay_buffer.add(np.reshape(s, (actor.s_dim,)), np.reshape(a, (actor.a_dim,)), r,
                               terminal, np.reshape(s2, (actor.s_dim,)))
@@ -353,7 +352,7 @@ def main(args):
         action_dim = env.action_space.shape[0]
         action_bound = env.action_space.high
         # Ensure action bound is symmetric
-        assert (env.action_space.high == -env.action_space.low)
+        #assert (env.action_space.high == -1*env.action_space.low)
 
         actor = ActorNetwork(sess, state_dim, action_dim, action_bound,
                              float(args['actor_lr']), float(args['tau']),
@@ -401,7 +400,7 @@ if __name__ == '__main__':
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/tf_ddpg')
 
     parser.set_defaults(render_env=False)
-    parser.set_defaults(use_gym_monitor=True)
+    parser.set_defaults(use_gym_monitor=False)
 
     args = vars(parser.parse_args())
 
