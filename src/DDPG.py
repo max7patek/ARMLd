@@ -11,12 +11,13 @@ Author: Patrick Emami
 
 import tensorflow as tf
 import numpy as np
-import gym
-from gym import wrappers
+#import gym
+#from gym import wrappers
 import tflearn
 import argparse
 import pprint as pp
-import Pong
+#import Pong
+import PongRivanna
 
 from ReplayBuffer import ReplayBuffer
 
@@ -285,6 +286,7 @@ def train(sess, env, args, actor, critic, actor_noise):
             a = actor.predict(np.reshape(s, (1, actor.s_dim))) + actor_noise()
 
             s2, r, terminal = env.step(a[0])
+            #env.draw()
 
             replay_buffer.add(np.reshape(s, (actor.s_dim,)), np.reshape(a, (actor.a_dim,)), r,
                               terminal, np.reshape(s2, (actor.s_dim,)))
@@ -343,13 +345,16 @@ def train(sess, env, args, actor, critic, actor_noise):
 def main(args):
     with tf.Session() as sess:
 
-        env = Pong # CHANGE HERE
+        env = PongRivanna # CHANGE HERE
         np.random.seed(int(args['random_seed']))
         tf.set_random_seed(int(args['random_seed']))
         #env.seed(int(args['random_seed'])) CHANGE HERE
 
-        state_dim = env.observation_space.shape[0]
-        action_dim = env.action_space.shape[0]
+        #state_dim = env.observation_space.shape[0]
+        state_dim = 12
+        #action_dim = env.action_space.shape[0]
+        action_dim = 2
+        #print("SHAPES ARE", state_dim, action_dim)
         action_bound = env.action_space.high
         # Ensure action bound is symmetric
         #assert (env.action_space.high == -1*env.action_space.low)
@@ -365,17 +370,17 @@ def main(args):
 
         actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(action_dim))
 
-        if args['use_gym_monitor']:
-            if not args['render_env']:
-                env = wrappers.Monitor(
-                    env, args['monitor_dir'], video_callable=False, force=True)
-            else:
-                env = wrappers.Monitor(env, args['monitor_dir'], force=True)
+        #if args['use_gym_monitor']:
+        #    if not args['render_env']:
+        #        env = wrappers.Monitor(
+        #            env, args['monitor_dir'], video_callable=False, force=True)
+        #    else:
+        #        env = wrappers.Monitor(env, args['monitor_dir'], force=True)
 
         train(sess, env, args, actor, critic, actor_noise)
 
-        if args['use_gym_monitor']:
-            env.monitor.close()
+        #if args['use_gym_monitor']:
+        #    env.monitor.close()
 
 
 if __name__ == '__main__':
@@ -396,7 +401,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-episode-len', help='max length of 1 episode', default=1000)
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
-    parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/gym_ddpg')
+    #parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/gym_ddpg')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/tf_ddpg')
 
     parser.set_defaults(render_env=False)
