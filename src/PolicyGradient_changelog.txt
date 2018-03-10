@@ -1,0 +1,16 @@
+PolicyGradient.py changelog
+
+
+--------------------------------------------
+
+Currently relies on OpenAI gym, my VM is Windows 10 which is not supported, used this command:
+pip install --no-index -f https://github.com/Kojoley/atari-py/releases atari_py
+
+courtesy of (https://stackoverflow.com/questions/42605769/openai-gym-atari-on-windows0)
+
+Adapted code from Python 2 to Python 3.5 
+
+Things to do: 
+-Change environment from OpenAI gym to our own Pong or PongRivanna implementation
+-Write method in Pong or PongRivanna that returns raw pixels of state [figure out matrix/list/hash]
+
