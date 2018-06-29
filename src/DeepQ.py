@@ -7,9 +7,9 @@ from tensorforce.core.explorations import EpsilonAnneal
 
 
 
-def main(days):
+def main(max_timesteps):
     max_episodes = None
-    max_timesteps = 86400000000*days
+    #max_timesteps = 86400000000*days
 
     network_spec = [
         #dict(type='flatten'),
@@ -45,11 +45,12 @@ def main(days):
 
     print("Starting {agent} for Environment '{env}'".format(agent=agent, env=env))
 
-    runner.run(num_episodes=max_episodes, max_episode_timesteps=None, episode_finished=episode_finished)
+    runner.run(num_episodes=max_episodes, num_timesteps=max_timesteps, max_episode_timesteps=None, episode_finished=episode_finished)
     runner.close()
 
     print("Learning finished. Total episodes: {ep}".format(ep=runner.episode))
 
 if __name__ == '__main__':
     from sys import argv
+    assert len(argv) == 2, 'input total num timesteps as command line argument'
     main(int(argv[1]))
