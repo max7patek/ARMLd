@@ -1,7 +1,7 @@
 
 from collections import namedtuple
 
-import Pong as env
+import PongRivanna as env
 
 from tensorforce.environments import Environment as force_env
 
