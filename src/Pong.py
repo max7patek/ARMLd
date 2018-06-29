@@ -106,7 +106,7 @@ def step(action): # action is a velocity vector
 
 def simple_step(action): #action is the index of a direction unit vector in DIRECTIONS
     player1.vel = speed * DIRECTIONS[action]
-    player2.vel = regulate_speed(expert_action(player2, speed))
+    player2.vel = regulate_speed(expert_action(player2), speed)
     return _step_execute()
 
 def _step_execute():

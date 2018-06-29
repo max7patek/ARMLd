@@ -108,7 +108,7 @@ def step(action): # action is a velocity vector
 
 def simple_step(action): #action is the index of a direction unit vector in DIRECTIONS
     player1.vel = speed * DIRECTIONS[action]
-    player2.vel = regulate_speed(expert_action(player2, speed))
+    player2.vel = regulate_speed(expert_action(player2), speed)
     return _step_execute()
 
 def _step_execute():
@@ -210,22 +210,23 @@ def magnitude(array):
         sum += i*i
     return math.sqrt(sum)
 
-'''
+
 def draw():
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            pygame.quit()
-            sys.exit()
-    canvas.fill(BLACK)
-    for i in _elements:
-        i.draw(canvas)
-    score1 = font.render(str(player1.score), False, RED)
-    canvas.blit(score1, (20, 20))
-    score2 = font.render(str(player2.score), False, RED)
-    canvas.blit(score2, (width - 20, 20))
-    pygame.display.update()
-    fps.tick(60)
-'''
+    pass
+    #for event in pygame.event.get():
+    #    if event.type == QUIT:
+    #        pygame.quit()
+    #        sys.exit()
+    #canvas.fill(BLACK)
+    #for i in _elements:
+    #    i.draw(canvas)
+    #score1 = font.render(str(player1.score), False, RED)
+    #canvas.blit(score1, (20, 20))
+    #score2 = font.render(str(player2.score), False, RED)
+    #canvas.blit(score2, (width - 20, 20))
+    #pygame.display.update()
+    #fps.tick(60)
+
 
 def _round(array):
     new = []

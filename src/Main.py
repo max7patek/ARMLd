@@ -37,7 +37,7 @@ updateModel = trainer.minimize(loss)
 # Set learning parameters
 y = 1 # initially .99
 e = 0.1
-num_episodes = 20000
+num_episodes = 500
 #create lists to contain total rewards and steps per episode
 jList = []
 rList = []

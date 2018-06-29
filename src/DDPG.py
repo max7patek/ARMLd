@@ -14,12 +14,18 @@ import numpy as np
 #import gym
 #from gym import wrappers
 import tflearn
-import argparse
-import pprint as pp
-#import Pong
-import PongRivanna
+import time
+
+animate = True
+if animate:
+    import Pong as Pong
+else:
+    import PongRivanna as Pong
 
 from ReplayBuffer import ReplayBuffer
+
+START_TIME = time.time()
+TIME_LIMIT = 0*24*60*60 + 1*60*60 + 0*60 + 0 # days, hours, minutes, seconds
 
 
 # ===========================
@@ -214,7 +220,7 @@ class CriticNetwork(object):
 # Taken from https://github.com/openai/baselines/blob/master/baselines/ddpg/noise.py, which is
 # based on http://math.stackexchange.com/questions/1287634/implementing-ornstein-uhlenbeck-in-matlab
 class OrnsteinUhlenbeckActionNoise:
-    def __init__(self, mu, sigma=0.3, theta=.15, dt=1e-2, x0=None):
+    def __init__(self, mu, sigma=1.5, theta=1.0, dt=1, x0=None):
         self.theta = theta
         self.mu = mu
         self.sigma = sigma
@@ -226,6 +232,7 @@ class OrnsteinUhlenbeckActionNoise:
         x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + \
             self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.mu.shape)
         self.x_prev = x
+        #print(x)
         return x
 
     def reset(self):
@@ -283,10 +290,12 @@ def train(sess, env, args, actor, critic, actor_noise):
 
             # Added exploration noise
             # a = actor.predict(np.reshape(s, (1, 3))) + (1. / (1. + i))
-            a = actor.predict(np.reshape(s, (1, actor.s_dim))) + actor_noise()
+            prediction = actor.predict(np.reshape(s, (1, actor.s_dim)))
 
+            a = prediction + actor_noise()
+            #print(a)
             s2, r, terminal = env.step(a[0])
-            #env.draw()
+            env.draw()
 
             replay_buffer.add(np.reshape(s, (actor.s_dim,)), np.reshape(a, (actor.a_dim,)), r,
                               terminal, np.reshape(s2, (actor.s_dim,)))
@@ -337,15 +346,21 @@ def train(sess, env, args, actor, critic, actor_noise):
 
                 print('| Reward: {:d} | Episode: {:d} | Qmax: {:.4f}'.format(int(ep_reward), \
                                                                              i, (ep_ave_max_q / float(j))))
-                break
+                if time.time() > START_TIME + TIME_LIMIT:
+                    return
+                else:
+                    break
 
 
 
 
 def main(args):
+
+    saver = tf.train.Saver()
+
     with tf.Session() as sess:
 
-        env = PongRivanna # CHANGE HERE
+        env = Pong # CHANGE HERE
         np.random.seed(int(args['random_seed']))
         tf.set_random_seed(int(args['random_seed']))
         #env.seed(int(args['random_seed'])) CHANGE HERE
@@ -384,31 +399,29 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
-
+    #parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
+    args = {}
     # agent parameters
-    parser.add_argument('--actor-lr', help='actor network learning rate', default=0.0001)
-    parser.add_argument('--critic-lr', help='critic network learning rate', default=0.001)
-    parser.add_argument('--gamma', help='discount factor for critic updates', default=0.99)
-    parser.add_argument('--tau', help='soft target update parameter', default=0.001)
-    parser.add_argument('--buffer-size', help='max size of the replay buffer', default=1000000)
-    parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=64)
-
-    # run parameters
-    parser.add_argument('--env', help='choose the gym env- tested on {Pendulum-v0}', default='Pendulum-v0')
-    parser.add_argument('--random-seed', help='random seed for repeatability', default=1234)
-    parser.add_argument('--max-episodes', help='max num of episodes to do while training', default=50000)
-    parser.add_argument('--max-episode-len', help='max length of 1 episode', default=1000)
-    parser.add_argument('--render-env', help='render the gym env', action='store_true')
-    parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
+    args['actor_lr']=0.0001
+    args['critic_lr']=0.001
+    args['gamma']=0.99
+    args['tau']=0.001
+    args['buffer_size']=1000000
+    args['minibatch_size']=64
+    args['env']='Pendulum-v0'
+    #args['random-seed']=1234
+    args['max_episodes']=50000
+    args['max_episode_len']=1000
+    args['render_env']=False
+    args['use_gym-monitor']=False
     #parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/gym_ddpg')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/tf_ddpg')
+    args['summary_dir']='./results/tf_ddpg'
 
-    parser.set_defaults(render_env=False)
-    parser.set_defaults(use_gym_monitor=False)
+    millis = int(round(time.time() * 1000))
 
-    args = vars(parser.parse_args())
+    args['random_seed']= millis % (2**32)
 
-    pp.pprint(args)
+
+    print(args)
 
     main(args)
