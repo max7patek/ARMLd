@@ -101,11 +101,25 @@ init()
 
 StateRewardDone = namedtuple("StateReward", ['state', 'reward', 'done'])
 
+import time
+timingstamp = time.time()
+def time_freq(func):
+    timingstamp = time.time()
+    def f(*args, **kwargs):
+        global timingstamp
+        ret = func(*args, **kwargs)
+        print(time.time() - timingstamp)
+        timingstamp = time.time()
+        return ret
+    return f
+
+
 def step(action): # action is a velocity vector
     player1.vel = regulate_speed(action, speed)
     player2.vel = regulate_speed(expert_action(player2), speed)
     return _step_execute()
 
+@time_freq
 def simple_step(action): #action is the index of a direction unit vector in DIRECTIONS
     player1.vel = speed * DIRECTIONS[action]
     player2.vel = regulate_speed(expert_action(player2), speed)
