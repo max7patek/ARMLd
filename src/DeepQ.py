@@ -3,11 +3,13 @@ from TensorForceAdapter import default_environment as env
 #from tensorforce.contrib.openai_gym import OpenAIGym
 from tensorforce.agents import DQNAgent
 from tensorforce.execution import Runner
+from tensorforce.core.explorations import EpsilonAnneal
 
 
-def main():
-    max_episodes = 1000
-    #max_timesteps = 1000
+
+def main(days):
+    max_episodes = None
+    max_timesteps = 86400000000*days
 
     network_spec = [
         #dict(type='flatten'),
@@ -20,6 +22,7 @@ def main():
         states=env.states,
         actions=env.actions,
         network=network_spec,
+        actions_exploration=dict(type='epsilon_decay', timesteps=max_timesteps)
         #batch_size=64
     )
 
@@ -48,4 +51,5 @@ def main():
     print("Learning finished. Total episodes: {ep}".format(ep=runner.episode))
 
 if __name__ == '__main__':
-    main()
+    from sys import argv
+    main(int(argv[1]))
