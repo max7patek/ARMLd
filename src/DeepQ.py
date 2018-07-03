@@ -5,7 +5,7 @@ from tensorforce.agents import DQNAgent
 from tensorforce.execution import Runner
 from tensorforce.core.explorations import EpsilonAnneal
 
-
+from datetime import datetime
 
 def main(max_timesteps):
     max_episodes = None
@@ -13,22 +13,44 @@ def main(max_timesteps):
 
     network_spec = [
         #dict(type='flatten'),
-        dict(type='dense', size=100, activation='tanh'),
-        dict(type='dense', size=20, activation='tanh'),
+        dict(type='dense', size=11, activation='tanh'),
+        #dict(type='dense', size=20, activation='tanh'),
         #dict(type='dense', size=32, activation='tanh'),
     ]
+
+    exploration = dict(type='epsilon_decay', timesteps=max_timesteps)
+
+    summarizer = dict(
+        directory="./models/"+str(datetime.now()).replace(' ', ''),
+        steps=10000,
+        seconds=None,
+        labels=[
+            #'rewards',
+            #'actions',
+            'inputs',
+            'gradients',
+            'configuration',
+        ],
+        meta_dict=dict(
+            description='July 2: Trying 11 node hidden layer.',
+            layers=str(network_spec),
+            timesteps=max_timesteps,
+            exploration=exploration,
+        ),
+    )
 
     agent = DQNAgent(
         states=env.states,
         actions=env.actions,
         network=network_spec,
-        actions_exploration=dict(type='epsilon_decay', timesteps=max_timesteps)
+        actions_exploration=exploration,
+        #summarizer=summarizer,
         #batch_size=64
     )
 
     runner = Runner(agent, env)
 
-    report_episodes = 10
+    report_episodes = 1
 
     #global prev
     global prev
@@ -37,8 +59,9 @@ def main(max_timesteps):
     def episode_finished(r):
         global prev
         if r.episode % report_episodes == 0:
-            print("Finished episode {ep} after {ts} timesteps".format(ep=r.episode, ts=r.timestep-prev))
-            print("Episode reward: {}".format(r.episode_rewards[-1]))
+            #print("Finished episode {ep} after {ts} timesteps".format(ep=r.episode, ts=r.timestep-prev))
+            #print("Episode reward: {}".format(r.episode_rewards[-1]))
+            print(r.episode_rewards[-1])
         prev = r.timestep
         #print("Average of last 100 rewards: {}".format(sum(r.episode_rewards[-100:]) / 100))
         return True
