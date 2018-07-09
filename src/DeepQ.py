@@ -69,6 +69,9 @@ def main(max_timesteps):
     print("Starting {agent} for Environment '{env}'".format(agent=agent, env=env))
 
     runner.run(num_episodes=max_episodes, num_timesteps=max_timesteps, max_episode_timesteps=None, episode_finished=episode_finished)
+
+    agent.save_model(directory='./results/DeepQ/'+str(datetime.now()).replace(' ', '')+'/model')
+
     runner.close()
 
     print("Learning finished. Total episodes: {ep}".format(ep=runner.episode))

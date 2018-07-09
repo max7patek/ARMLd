@@ -70,7 +70,7 @@ def main(max_timesteps):
 
     runner.run(num_episodes=max_episodes, num_timesteps=max_timesteps, max_episode_timesteps=None, episode_finished=episode_finished)
 
-    agent.save_model(directory='./results/DeepQ/'+str(datetime.now()).replace(' ', '')+'/model')
+    agent.save_model(directory='./results/PPO/'+str(datetime.now()).replace(' ', '')+'/model')
 
     runner.close()
 
