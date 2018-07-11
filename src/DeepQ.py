@@ -7,7 +7,7 @@ from tensorforce.core.explorations import EpsilonAnneal
 
 from datetime import datetime
 
-def main(max_timesteps):
+def main(max_timesteps, learning_rate):
     max_episodes = None
     #max_timesteps = 86400000000*days
 
@@ -44,6 +44,7 @@ def main(max_timesteps):
         actions=env.actions,
         network=network_spec,
         actions_exploration=exploration,
+        optimizer=dict(type='adam', learning_rate=learning_rate)
         #summarizer=summarizer,
         #batch_size=64
     )
@@ -76,7 +77,12 @@ def main(max_timesteps):
 
     print("Learning finished. Total episodes: {ep}".format(ep=runner.episode))
 
+def remap(x, in_min, in_max, out_min, out_max):
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
 if __name__ == '__main__':
     from sys import argv
-    assert len(argv) == 2, 'input total num timesteps as command line argument'
-    main(int(argv[1]))
+    assert len(argv) == 3, 'input total num timesteps and learning rate index'
+    lr = remap(int(argv[2]), 1, 16, .0001, .05)
+    print('learning index = ' + argv[2] + ', learning rate =', lr)
+    main(int(argv[1]), lr)
