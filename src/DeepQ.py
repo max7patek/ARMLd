@@ -80,9 +80,12 @@ def main(max_timesteps, learning_rate):
 def remap(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
+def index_to_rate(i):
+    return remap(2**i, 2**0, 2**15, .0001, .05)
+
 if __name__ == '__main__':
     from sys import argv
     assert len(argv) == 3, 'input total num timesteps and learning rate index'
-    lr = remap(int(argv[2]), 1, 16, .0001, .05)
+    lr = index_to_rate(int(argv[2]))
     print('learning index = ' + argv[2] + ', learning rate =', lr)
     main(int(argv[1]), lr)
