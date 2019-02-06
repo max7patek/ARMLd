@@ -44,7 +44,7 @@ r2o2 = math.sqrt(2)/2
 DIRECTIONS = namedtuple('Directions', ['ZERO', 'NORTH', 'NORTHEAST', 'EAST', 'SOUTHEAST', 'SOUTH', 'SOUTHWEST', 'WEST', 'NORTHWEST'])\
     (np.array([0,0]), np.array([0,1]), np.array([r2o2,r2o2]), np.array([1,0]), np.array([r2o2,-r2o2]), np.array([0,-1]),\
      np.array([-r2o2,-r2o2]), np.array([-1,0]), np.array([-r2o2,r2o2]))
-nn = networkAC.network(action_size = len(DIRECTIONS),state_size=12)
+
 width = 400.0
 x_center = width/2
 height = 400.0
@@ -235,6 +235,8 @@ def _round(array):
         new.append(int(round(i)))
     return np.array(new)
 
+    
+nn = networkAC.network(action_size = len(DIRECTIONS),state_size=12)
 def main():
     global total_points
     global wins
@@ -254,31 +256,10 @@ def main():
                 total_points += player1.score
                 if player1.score == 5:
                         wins = wins+1
-                print "iterations: {} Total Points: {} In Game points:{}, wins:{}".format(i, total_points, player1.score, wins)
+                print( "iterations: {} Total Points: {} In Game points:{}, wins:{}".format(i, total_points, player1.score, wins))
 
-                print " "
                 break
         if i % 100 == 0:
-            nn._save()
-
-def main1():
-    global total_points
-    for epochs in range(20000):#number of games to play
-        state = reset()
-        state = np.reshape(state, [1, 12])
-        while True: #10000 is arbitrary number for number of moves per game
-            action = nn._act(state)
-            next_state, reward, done = simple_step(action)
-            next_state = np.reshape(next_state, [1, 12])
-            nn.recall(state, action, reward, next_state, done)
-            state = next_state
-            #draw()
-            if done:
-
-                break
-        if player1.score != 5:
-            nn.replay(50) #train through random batch examples
-
-        print "iterations: {} Total Points: {} InGame points:{}".format(epochs, total_points, player1.score)
+            nn._save() #train through random batch examples
 if __name__ == '__main__':
     main()

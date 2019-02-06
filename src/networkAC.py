@@ -10,18 +10,18 @@ class network:
         self.state_size = state_size
         self.action_size = action_size
         self.value_size = 1
-        self.load_model = False
+        self.load_model = False #load model from pretrained weights
         self.discount_factor = 0.99
 
         self.learning_rate_actor = 0.001
         self.learning_rate_critic = 0.005
 
-        self.actor = self.actor_model()
-        self.critic = self.critic_model()
+        self.actor = self.actor_model() #create actor model
+        self.critic = self.critic_model() #create critic model
 
         if self.load_model:
-            self.actor.load_weights("/Users/Sami/Documents/Folder/Coding/Python/Machine-Learning/Pong/Weights/network_actor.h5")
-            self.critic.load_weights("/Users/Sami/Documents/Folder/Coding/Python/Machine-Learning/Pong/Weights/network_critic.h5")
+            self.actor.load_weights("network_actor.h5")
+            self.critic.load_weights("network_critic.h5")
 
     def discount_rewards(self, rewards):
         discounted_rewards = np.zeros_like(rewards)
@@ -38,7 +38,7 @@ class network:
         model.add(Dense(24, activation = 'relu', input_dim = self.state_size,kernel_initializer='he_uniform'))
         model.add(Dense(48, activation = 'relu'))
         model.add(Dense(24, activation = 'relu'))
-        model.add(Dense(self.value_size, activation = 'softmax',kernel_initializer='he_uniform'))
+        model.add(Dense(self.action_size, activation = 'softmax',kernel_initializer='he_uniform'))
         model.compile(loss='categorical_crossentropy',optimizer=Adam(lr=self.learning_rate_actor))
         return model
 
@@ -53,6 +53,7 @@ class network:
 
     def _act(self, state):
         policy = self.actor.predict(state, batch_size=1).flatten()
+
         return np.random.choice(self.action_size, 1, p=policy)[0]
 
     def _train(self, state, action, reward, next_state, done):
@@ -74,5 +75,5 @@ class network:
 
 
     def _save(self):
-        self.actor.save_weights("/Users/Sami/Documents/Folder/Coding/Python/Machine-Learning/Pong/Weights/network_actor1.h5")
-        self.critic.save_weights("/Users/Sami/Documents/Folder/Coding/Python/Machine-Learning/Pong/Weights/network_critic1.h5")
+        self.actor.save_weights("network_actor.h5")
+        self.critic.save_weights("network_critic.h5")
