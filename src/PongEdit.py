@@ -7,12 +7,6 @@ data will be accessible in the Pong.* namespace.
 I'm using numpy arrays because I think they will be compatible with Tensorflow.
 I'm using pygame to do the animation, which is pretty bad right now, but its better than nothing.
 
-TODO:
- - Figure out if we want to cap ball speed
- - Figure out the right player speed cap
- - Tune other parameters
- - Machine Learn
-
 '''
 
 
@@ -235,7 +229,7 @@ def _round(array):
         new.append(int(round(i)))
     return np.array(new)
 
-    
+
 nn = networkAC.network(action_size = len(DIRECTIONS),state_size=12)
 def main():
     global total_points
