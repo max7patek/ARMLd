@@ -2,9 +2,9 @@
 Our own implementation of Pong-like game.
 
 '''
-
-
-import networkAC
+#.023
+import keras.backend as K
+import networkAC as ac
 import math
 import numpy as np
 import random
@@ -15,17 +15,39 @@ from collections import namedtuple
 from gym.spaces import Box
 import os
 from multiprocessing import Pool
+import tensorflow as tf
+import time, random, threading
+
+RUN_TIME = 50000
+THREADS = 8
+OPTIMIZERS = 2
+THREAD_DELAY = 0.001
+
+GAMMA = 0.99
+
+N_STEP_RETURN = 8
+GAMMA_N = GAMMA ** N_STEP_RETURN
+
+EPS_START = 0.4
+EPS_STOP  = .15
+EPS_STEPS = 75000
+
+MIN_BATCH = 32
+LEARNING_RATE = 5e-3
+
+LOSS_V = .5
+LOSS_ENTROPY = .01
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-animate = True
+animate = False
 if animate:
     pygame.init()
     fps = pygame.time.Clock()
     font = pygame.font.SysFont('Comic Sans MS', 30)
     pygame.display.set_caption('Hello World')
 
-StateRewardDone = namedtuple("StateReward", ['state', 'reward', 'done'])
+StateRewardDone = namedtuple("StateReward", ['state', 'reward', 'done', 'hits'])
 r2o2 = math.sqrt(2)/2
 WHITE = (255,255,255)
 RED = (255,0,0)
@@ -141,6 +163,7 @@ class Pong:
         self.player1.score = 0
         self.player2.score = 0
         self._reward = 0
+        self.hits = 0
 
 
 
@@ -150,6 +173,7 @@ class Pong:
         return self._step_execute()
 
     def simple_step(self, action): #action is the index of a direction unit vector in DIRECTIONS
+
         self.player1.vel = self.speed * self.DIRECTIONS[action]
         self.player2.vel = self.regulate_speed(self.expert_action(self.player2), self.speed)
         return self._step_execute()
@@ -163,10 +187,11 @@ class Pong:
 
         r = self._reward
         s = self.flat()
+        hits = self.hits
         if r != 0:
             self.upon_score() # resets _reward
 
-        return StateRewardDone(s, r, self.player1.score == self.score_limit or self.player2.score == self.score_limit)
+        return StateRewardDone(s, r, self.player1.score == self.score_limit or self.player2.score == self.score_limit, hits)
 
 
     def reset(self):
@@ -175,12 +200,14 @@ class Pong:
 
     def upon_score(self): # resets _reward
         if self._reward > 0:
-            self.player1.score += 1
+            if self.hits > 0:
+                self.player1.score += 1
         elif self._reward < 0:
             self.player2.score += 1
         self._reward = 0
         self.ball.pos = np.array([self.width/2 for _ in range(self.DIMENSIONS)])
         self.ball.vel = self.random_vec()
+        self.hits = 0
         return
 
 
@@ -226,7 +253,8 @@ class Pong:
             for j in range(i+1, len(self._elements)):
                 if colliding(self._elements[i], self._elements[j]):
                     if self._elements[i].ball and self._elements[j].player1:
-                        self._reward = 5
+                        self._reward += 0
+                        self.hits += 1
                     resolve(self._elements[i], self._elements[j])
 
 
@@ -274,7 +302,7 @@ class Pong:
         score2 = font.render(str(self.player2.score), False, RED)
         canvas.blit(score2, (self.width - 20, 20))
         pygame.display.update()
-        fps.tick(60)
+        fps.tick(120)
 
     def random_vec(self):
         out = np.array([random.random()*2 - 1 for _ in range(self.DIMENSIONS)])
@@ -293,39 +321,68 @@ def _positive(num):
 
 game = Pong(DIMENSIONS=3)
 state_dim = 6*game.DIMENSIONS
-nn = networkAC.network(action_size = len(game.DIRECTIONS),state_size=state_dim)
+#nn = network.DQNagent(state_size=state_dim,action_size = len(game.DIRECTIONS))
+class Environment(threading.Thread):
+    stop_signal = False
+    def __init__(self, animate=False, eps_start=EPS_START, eps_end=EPS_STOP, eps_steps=EPS_STEPS):
+        threading.Thread.__init__(self)
+        self.animate = animate
+        self.env = Pong(DIMENSIONS=3)
+        self.agent = ac.Agent(eps_start, eps_end, eps_steps)
+    def runEpisode(self):
+        s = self.env.reset()
+        R = 0
+        hits = 0
+        while True:
+            time.sleep(THREAD_DELAY)
+            if self.animate:self.env.draw()
 
-def main():
-    # global total_points
-    total_points = 0
-    # global wins
-    wins = 0
-    for i in range(100000):
-        done = False
-        state = game.reset()
-        state = np.reshape(state, [1, state_dim])
-        while not done:
-            action = nn._act(state)
-            next_state, reward, done = game.simple_step(action)
-            if animate:
-                game.draw()
-            next_state = np.reshape(next_state, [1, state_dim])
-        #reward = reward if not done else -100
-            nn._train(state, action, reward, next_state, done)
-            state = next_state
-
+            a = self.agent.act(s)
+            s_, r, done, hit = self.env.simple_step(a)
+            hits+=hit
             if done:
-                total_points += game.player1.score
-                if game.player1.score == 5:
-                        wins = wins+1
-                print( "iterations: {} Total Points: {} In Game points:{}, wins:{}".format(i, total_points, game.player1.score, wins))
-
+                s_ = None
+                print("score:{}, reward:{}".format(self.env.player1.score, R))
+            self.agent.train(s, a, r, s_)
+            s = s_
+            R += r
+            if done or self.stop_signal:
                 break
-        if i % 100 == 0:
-            nn._save() #train through random batch examples
+
+
+    def run(self):
+        while not self.stop_signal:
+            self.runEpisode()
+    def stop(self):
+        self.stop_signal = True
+NUM_STATE = 12
+NUM_ACTIONS = 9
+NONE_STATE = np.zeros(NUM_STATE)
+def main():
+
+    env_test = Environment(animate=False, eps_start=0., eps_end=0.)
+
+    envs = [Environment() for i in range(THREADS)]
+    opts = [ac.Optimizer() for i in range(OPTIMIZERS)]
+
+    for o in opts:
+	       o.start()
+    for e in envs:
+	       e.start()
+    for x in range(5):
+        ac.save()
+        print("saved")
+        time.sleep(RUN_TIME/5)
+    for e in envs:
+	       e.stop()
+    for e in envs:
+	       e.join()
+    for o in opts:
+	       o.stop()
+    for o in opts:
+	       o.join()
+
+    #env_ = Environment(animate=True, eps_start=0., eps_end=0.)
+
 if __name__ == '__main__':
-    # pool = Pool(8)
-    # pool.starmap_async(main, [() for _ in range(8)])
-    # pool.close()
-    # pool.join()
     main()
