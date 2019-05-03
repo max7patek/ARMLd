@@ -1,4 +1,7 @@
 scp
 .idea
+results
+.vscode
+models
 *~
 __pycache__
